@@ -33,6 +33,8 @@ y[y == -np.inf] = 0
 y[y == np.inf] = 0
 data_normalized =  (y- data_to_be_norm.mean(axis = 0)) /  data_to_be_norm.std(axis = 0)
 
+print("Mean = {0} \n SD = {1} \n Var = {2}".format(data_normalized.mean(axis = 0), data_normalized.std(axis = 0), data_normalized.var(axis = 0)))
+
 # PCA!!!
 U,S,Vh = svd(data_normalized,full_matrices=False)
 V = Vh.T  

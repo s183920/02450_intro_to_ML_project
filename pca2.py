@@ -9,3 +9,9 @@ attributeNames = df.columns
 #print(cat_labels))
 classLabels = [cat_labels[i] for i in ["10","15","20","22","26","30"]] 
 print(classLabels)
+
+#TESTERRRRR
+
+print(len(df[df.trending_time >3])/len(df))
+
+
