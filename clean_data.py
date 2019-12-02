@@ -9,8 +9,12 @@ from Dataload import make_df
 from categories import find_cat_labels
 from date_cleaning import date_cleaning
 import numpy as np
+import warnings
 
-def clean_data(path):
+
+def clean_data(path, ignore_warn = True):
+    if ignore_warn:
+        warnings.filterwarnings("ignore")
     df = make_df(path)
 
     cat_labels = find_cat_labels('Datasets/CA_category_id.json')
@@ -47,5 +51,5 @@ data = transform_data(data, cols)
 """
 
 #print("Mean: \n {} \n Std: \n {} \n Head: \n {}".format(data.mean(axis = 0), data.std(axis = 0), data.head()))
-data = clean_data('Datasets/**videos.csv')
-print(len(data))
+#data = clean_data('Datasets/**videos.csv')
+#print(len(data))

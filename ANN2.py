@@ -8,17 +8,19 @@ from __init__ import train_neural_net, draw_neural_net
 from scipy import stats
 from clean_data import *
 from pandas import DataFrame
+import pandas as pd
 
 # Load Matlab data file and extract variables of interest
 data = clean_data('Datasets/**videos.csv')
 data = transform_data(data,['likes','dislikes','views','comment_count','trending_time'])
-data = data.head(6000) #viser at man sagtens kan plotte training error med mindre data
+np.random.seed(180820)
+data = data.head(10000)
 #X = np.array(data[['likes','dislikes','comment_count','trending_time']])
 #y = np.array(data['views']).squeeze()
 X = np.array(data)
-y = X[:,[4]]             # alcohol contents (target)
+y = X[:,[4]]             
 X = X[:,0:4]
-attributeNames = ['likes','dislikes','views','comment_count','trending_time',]
+attributeNames = ['likes','dislikes','views','comment_count','trending_time']
 N, M = X.shape
 C = 2
 
@@ -29,7 +31,7 @@ n_replicates = 1      # number of networks trained in each k-fold
 max_iter = 10000        # 
 
 # K-fold crossvalidation
-K = 10                  # only three folds to speed up this example
+K = 10                 # only three folds to speed up this example
 CV = model_selection.KFold(K, shuffle=True)
 
 # Setup figure for display of learning curves and error rates in fold
@@ -83,67 +85,38 @@ for (k, (train_index, test_index)) in enumerate(CV.split(X,y)):
         errors.append(mse) # store error rate for current CV fold 
     #Generr.append(round(np.sqrt(np.mean(errors))))
 
+#Reshaping our errors to work with a Dataframe
 errors = np.asarray(errors)
-#errors.resize((4,4)).shape()
-Fail = {'Hidden Units':[1,2,3,4,5],
-        'Cv-Fold1':[errors[0],errors[10],errors[20],errors[30],errors[40],errors[50],errors[60],errors[70],errors[80],errors[90]],
-        'Cv-Fold2':[errors[1],errors[11],errors[21],errors[31],errors[41],errors[51],errors[61],errors[71],errors[81],errors[91]],
-        'Cv-Fold3':[errors[2],errors[12],errors[22],errors[32],errors[42],errors[52],errors[62],errors[72],errors[82],errors[92]],
-        'Cv-Fold4':[errors[3],errors[13],errors[23],errors[33],errors[43],errors[53],errors[63],errors[73],errors[83],errors[93]],
-        'Cv-Fold5':[errors[4],errors[14],errors[24],errors[34],errors[44],errors[54],errors[64],errors[74],errors[84],errors[94]],
-        'Cv-Fold6':[errors[5],errors[15],errors[25],errors[35],errors[45],errors[55],errors[65],errors[75],errors[85],errors[95]],
-        'Cv-Fold7':[errors[6],errors[16],errors[26],errors[36],errors[46],errors[56],errors[66],errors[76],errors[86],errors[96]],
-        'Cv-Fold8':[errors[7],errors[17],errors[27],errors[37],errors[47],errors[57],errors[67],errors[77],errors[87],errors[97]],
-        'Cv-Fold9':[errors[8],errors[18],errors[28],errors[38],errors[48],errors[58],errors[68],errors[78],errors[88],errors[98]],
-        'Cv-Fold10':[errors[9],errors[19],errors[29],errors[39],errors[49],errors[59],errors[69],errors[79],errors[89],errors[99]]
-        }
-df = DataFrame(Fail,columns=['Hidden Units','Cv-Fold1','Cv-Fold2','Cv-Fold3',
-                             'Cv-Fold4','Cv-Fold5','Cv-Fold6','Cv-Fold7',
-                             'Cv-Fold8','Cv-Fold9','Cv-Fold10'])
-print(df)
-"""
-    # Display the learning curve for the best net in the current fold
-    h, = summaries_axes[0].plot(learning_curve, color=color_list[k])
-    h.set_label('CV fold {0}'.format(k+1))
-    summaries_axes[0].set_xlabel('Iterations')
-    summaries_axes[0].set_xlim((0, max_iter))
-    summaries_axes[0].set_ylabel('Loss')
-    summaries_axes[0].set_title('Learning curves')
-# Display the MSE across folds
-    
-summaries_axes[1].bar(np.arange(1, K+1), np.squeeze(np.asarray(errors)), color=color_list)
-summaries_axes[1].set_xlabel('Fold');
-summaries_axes[1].set_xticks(np.arange(1, K+1))
-summaries_axes[1].set_ylabel('MSE');
-summaries_axes[1].set_title('Test mean-squared-error')
-    
-print('Diagram of best neural net in last fold:')
-weights = [net[i].weight.data.numpy().T for i in [0,2]]
-biases = [net[i].bias.data.numpy() for i in [0,2]]
-tf =  [str(net[i]) for i in [1,2]]
-draw_neural_net(weights, biases, tf, attribute_names=attributeNames)
+errors = errors.reshape(10,10)
 
-# Print the average classification error rate
-print('\nEstimated generalization error, RMSE: {0}'.format(round(np.sqrt(np.mean(errors)), 4)))
+#print(errors[:,0])
+#print(errors[:,1])
+#print(errors[:,2])
 
-# When dealing with regression outputs, a simple way of looking at the quality
-# of predictions visually is by plotting the estimated value as a function of 
-# the true/known value - these values should all be along a straight line "y=x", 
-# and if the points are above the line, the model overestimates, whereas if the
-# points are below the y=x line, then the model underestimates the value
+#Dataframe
+Fails = {'Cv-Folds':[1,2,3,4,5,6,7,8,9,10],
+         'H1': errors[:,0],
+         'H2': errors[:,1],
+         'H3': errors[:,2],
+         'H4': errors[:,3],
+         'H5': errors[:,4],
+         'H6': errors[:,5],
+         'H7': errors[:,6],
+         'H8': errors[:,7],
+         'H9': errors[:,8],
+         'H10':errors[:,9]
+         }
+Errordf = DataFrame(Fails,columns=['Cv-Folds','H1','H2','H3','H4','H5','H6','H7','H8','H9','H10'])
 
-plt.figure(figsize=(10,10));
-y_est = y_test_est.data.numpy(); y_true = y_test.data.numpy();
-axis_range = [np.min([y_est, y_true])-1,np.max([y_est, y_true])+1]
-plt.plot(axis_range,axis_range,'k--')
-plt.plot(y_true, y_est,'ob',alpha=.25)
-plt.legend(['Perfect estimation','Model estimations'])
-plt.title('Trending time prediction: estimated versus true value (for last CV-fold)')
-plt.ylim(axis_range); plt.xlim(axis_range)
-plt.xlabel('True value')
-plt.ylabel('Estimated value')
-plt.grid()
+with pd.option_context('display.max_rows', None, 'display.max_columns', None): 
+    print(Errordf)
 
-plt.show()
+#finding the minimum error, and the number of hidden units for that error. 
+minValues = Errordf.min()
+minIndex = Errordf.idxmin(axis=0)
 
-"""
+WubWub = {'hidden units': minIndex+1,
+          'E-test': minValues}
+endData = DataFrame(WubWub, columns=['hidden units','E-test'])
+print(endData)
+

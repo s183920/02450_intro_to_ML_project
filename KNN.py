@@ -12,12 +12,10 @@ from __init__ import train_neural_net, draw_neural_net
 from scipy import stats
 from clean_data import clean_data, transform_data
 
-
-
 # SETUP ------------------------------------------------------------------------------------------------------
 cols = ["likes", "dislikes", "views", "comment_count", "trending_time"]
 data = clean_data('Datasets/**videos.csv')
-data = data.head(5000)
+data = data.head(100000)
 data_norm = transform_data(data, cols)
 
 data["class"] = np.where(data["trending_time"]<=3., 1, 0.)
@@ -32,14 +30,12 @@ N, M = X.shape
 
 #k-fold cross validation with classifier 
 
+K = 10
+
+CV = model_selection.KFold(K, shuffle=True)
+L=40 # Maximum number of neighbors
 
 
-
-internal_cross_validation = 5
-
-CV1 = model_selection.KFold(K, shuffle=True)
-lambdas = np.power(10.,range(-5,5))
-L=10 # Maximum number of neighbors
 errors = np.zeros((N,L))
 K = 10
 internal_cross_validation = 10
@@ -52,7 +48,7 @@ for train_index, test_index in CV1.split(X,y):
     yo_train = y[train_index]
     Xo_test = X[test_index,:]
     yo_test = y[test_index]
-	CV2 = model_selection.KFold(internal_cross_validation, shuffle = True )
+	CV2 = model_selection.KFold(internal_cross_validation, shuffle=True)
 	
 	k2 = 0
     for train_index, test_index in CV2.split(Xo_train,yo_train):
@@ -89,23 +85,30 @@ summary = np.empty((K,5))
  #   X_test, y_test = X[test_index,:], y[test_index]
 
 	# Fit classifier and classify the test points (consider 1 to 40 neighbors)
- #   for l in range(1,L+1):
- #       knclassifier = KNeighborsClassifier(n_neighbors=l)
- #       knclassifier.fit(X_train, y_train)
- #       y_est = knclassifier.predict(X_test)
- #       errors[k,l-1] = np.sum(y_est!=y_test)
+    for l in range(1,L+1):
+        knclassifier = KNeighborsClassifier(n_neighbors=l)
+        knclassifier.fit(X_train, y_train)
+        y_est = knclassifier.predict(X_test)
+        errors[k,l-1] = np.sum(y_est!=y_test)
 
- #   k+=1
+    k+=1
 
-#errors = 100*sum(errors,0)/N
-#print("Error percent ", errors)
-#print(errors[1])
+e_gen = np.sum(errors) * (len(X_test)/ len(X))
 
-#figure()
-#plot(errors)
-#xlabel('Number of neighbors')
-#ylabel('Classification error rate (%)')
-#show()
+#sorted list of index
+res = errors
+sort_index = np.argsort(res)
+
+errors = 100*sum(errors,0)/N
+print("Error percent ", errors)
+print("Gen_Err")
+print(np.sum(errors))
+
+figure()
+plot(errors)
+xlabel('Number of neighbors')
+ylabel('Classification error rate (%)')
+show()
 
 
 

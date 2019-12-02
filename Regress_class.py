@@ -30,7 +30,7 @@ N, M = X.shape
 
 # Create crossvalidation partition for evaluation
 # using stratification and 95 pct. split between training and test 
-K = 5
+K = 10
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.20)
 # Try to change the test_size to e.g. 50 % and 99 % - how does that change the 
 # effect of regularization? 
@@ -48,12 +48,12 @@ X_test = (X_test - mu) / sigma
 #LOGISTIC REGRESSION MODEL
 
 # Fit regularized logistic regression model to training data to predict 
-lambda_interval = np.logspace(-8, 2, 50)
+lambda_interval = np.logspace(-10, 15, 50)
 train_error_rate = np.zeros(len(lambda_interval))
 test_error_rate = np.zeros(len(lambda_interval))
 coefficient_norm = np.zeros(len(lambda_interval))
 for k in range(0, len(lambda_interval)):
-    mdl = LogisticRegression(penalty='l2', C=1/lambda_interval[k] )
+    mdl = LogisticRegression(penalty='l2', C=1/lambda_interval[k])
     
     mdl.fit(X_train, y_train)
 
@@ -69,6 +69,10 @@ for k in range(0, len(lambda_interval)):
 min_error = np.min(test_error_rate)
 opt_lambda_idx = np.argmin(test_error_rate)
 opt_lambda = lambda_interval[opt_lambda_idx]
+max_error = np.max(test_error_rate)
+opt_lambda_idxM = np.argmax(test_error_rate)
+opt_lambdaM = lambda_interval[opt_lambda_idxM]
+print("TTEEEEEESSSSSTTTTT",opt_lambdaM)
 
 plt.figure(figsize=(8,8))
 #plt.plot(np.log10(lambda_interval), train_error_rate*100)
@@ -77,7 +81,7 @@ plt.figure(figsize=(8,8))
 plt.semilogx(lambda_interval, train_error_rate*100)
 plt.semilogx(lambda_interval, test_error_rate*100)
 plt.semilogx(opt_lambda, min_error*100, 'o')
-plt.text(1e-8, 3, "Minimum test error: " + str(np.round(min_error*100,2)) + ' % at 1e' + str(np.round(np.log10(opt_lambda),2)))
+plt.text(1e-8, 3, "Minimum test error: " + str(np.round(min_error*100,2)) + ' % at 1e' + str(np.round(np.log10(opt_lambda),2), "maxT"+str(np.round(np.log10(opt_lambdaM),2))))
 plt.xlabel('Regularization strength, $\log_{10}(\lambda)$')
 plt.ylabel('Error rate (%)')
 plt.title('Classification error')
@@ -94,7 +98,7 @@ plt.title('Parameter vector L2 norm')
 plt.grid()
 plt.show()    
 
-print('Ran Exercise 9.1.1')
+print('Ran Regress_class')
 
 
 

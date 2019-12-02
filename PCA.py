@@ -45,7 +45,7 @@ proj_data = data_normalized @ V
 
 # plot
 
-index = [df.category_id[id] in [10, 15,20,22,26,30] for id in range(len(df.category_id))]
+index = [df.category_id[id] in [10,15,20,22,26,30] for id in range(len(df.category_id))]
 
 proj_plot_data = proj_data[index]
 

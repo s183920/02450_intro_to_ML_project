@@ -8,23 +8,35 @@ from scipy import stats
 from clean_data import *
 from pandas import DataFrame
 import pandas as pd
+from matplotlib.pylab import (figure, semilogx, loglog, xlabel, ylabel, legend, 
+                           title, subplot, show, grid)
+import sklearn.linear_model as lmq
 
 # -----------------------SETUP--------------------------------------------------
 
 # Load Data from our script
 data = clean_data('Datasets/**videos.csv')
 data = transform_data(data,['likes','dislikes','views','comment_count','trending_time'])
+<<<<<<< HEAD
+data = data.head(200) #viser at man sagtens kan plotte training error med mindre data
+X = np.array(data[['likes','dislikes','comment_count','trending_time']])
+y = np.array(data['views']).squeeze()
+=======
 data = data.head(100) #viser at man sagtens kan plotte training error med mindre data
 #X = np.array(data[['likes','dislikes','comment_count','trending_time']])
 #y = np.array(data['views']).squeeze()
 X = np.array(data)
 y = X[:,[4]]             # Trending time prediction
 X = X[:,0:4]
+>>>>>>> c311ba3134be21e7919ba6e95f686812451253d2
 attributeNames = ['likes','dislikes','views','comment_count','trending_time',]
 N, M = X.shape
 C = 2
 
+<<<<<<< HEAD
+=======
 
+>>>>>>> c311ba3134be21e7919ba6e95f686812451253d2
 
 #-------------------LINEAR REGRESSION and BASELINE-----------------------------
 # options
@@ -37,7 +49,7 @@ end_lambda = 50
 step_size = 1
 
 print_info = True #whether or not to print info for outer loop
-reg_plots = True # whether or not to plot regularisation plots
+reg_plots = False # whether or not to plot regularisation plots
 
 # Add offset attribute ------------------------------------------------------------------------------------------------------
 X = np.concatenate((np.ones((X.shape[0],1)),X),1)
@@ -160,7 +172,7 @@ if layer2:
 
         k+=1
 
-    error_df = pd.DataFrame(error_d, columns = error_names)
+    error_df = pd.DataFrame(error_array, columns = error_names)
     print(error_df)
 show()
 # Display results
@@ -181,14 +193,17 @@ for m in range(M):
 
 
 #--------------------------ANN------------------------------------
-
+X = np.array(data)
+y = X[:,[4]]             # Trending time prediction
+X = X[:,0:4]
+splits = CV.split(X,y)
 # Parameters for neural network classifier
 n_replicates = 1      # number of networks trained in each k-fold
 max_iter = 10000        # 
 
 # K-fold crossvalidation
 K = K1                  # only three folds to speed up this example
-CV = model_selection.KFold(K, shuffle=True)
+#CV = model_selection.KFold(K, shuffle=True)
 
 # Setup figure for display of learning curves and error rates in fold
 summaries, summaries_axes = plt.subplots(1,2, figsize=(10,5))
@@ -210,7 +225,7 @@ for (k, (train_index, test_index)) in enumerate(splits):
     y_test = torch.tensor(y[test_index], dtype=torch.uint8)
     #Der skal være et for loop der tager den optimale model/ antal hidden units. 
     for h in range(1,11):
-        print('Hidden Layer nr. {}'.format(h))
+        print('Hidden unit nr. {}'.format(h))
         n_hidden_units = h
         model = lambda: torch.nn.Sequential(
                     torch.nn.Linear(M, n_hidden_units), #M features to n_hidden_units
@@ -242,7 +257,9 @@ for (k, (train_index, test_index)) in enumerate(splits):
     #Generr.append(round(np.sqrt(np.mean(errors))))
 
 errors = np.asarray(errors)
+print(errors)
 #errors.resize((4,4)).shape()
+'''
 Fail = {'Hidden Units':[1,2,3,4,5,6,7,8,9,10],
         'Cv-Fold1':[errors[0],errors[10],errors[20],errors[30],errors[40],errors[50],errors[60],errors[70],errors[80],errors[90]],
         'Cv-Fold2':[errors[1],errors[11],errors[21],errors[31],errors[41],errors[51],errors[61],errors[71],errors[81],errors[91]],
@@ -260,6 +277,25 @@ Errordf = DataFrame(Fail,columns=['Hidden Units','Cv-Fold1','Cv-Fold2','Cv-Fold3
 with pd.option_context('display.max_rows', None, 'display.max_columns', None): 
     print(Errordf)
 
+
+Fails = {'Cv-Folds':[1,2,3,4,5,6,7,8,9,10],
+         'H1':[errors[0:10]],
+         'H2':[errors[10:20]],
+         'H3':[errors[20:30]],
+         'H4':[errors[30:40]],
+         'H5':[errors[40:50]],
+         'H6':[errors[50:60]],
+         'H7':[errors[60:70]],
+         'H8':[errors[70:80]],
+         'H9':[errors[80:90]],
+         'H10':[errors[90:100]]
+         }
+Errordf = DataFrame(Fails,columns=['Cv-Folds','H1','H2','H3','H4','H5','H6','H7','H8','H9','H10'])
+
+with pd.option_context('display.max_rows', None, 'display.max_columns', None): 
+    print(Errordf)
+
+
 minValues = Errordf.min()
 minIndex = Errordf.idxmin(axis=0)
 
@@ -270,7 +306,12 @@ print(endData)
 
 # ---------------------------- dataframe -----------------------------------------
 
+<<<<<<< HEAD
+error_data = pd.concat([endData, error_df],axis=1)
+=======
 error_data = pd.concat([endData, error_df], axis = 1)
+>>>>>>> c311ba3134be21e7919ba6e95f686812451253d2
 
 print(error_data)
 print(error_data.to_latex())
+'''

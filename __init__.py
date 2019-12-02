@@ -12,6 +12,8 @@ from matplotlib.pyplot import contourf
 from matplotlib import cm
 import scipy.stats
 import scipy.stats as st
+from scipy.stats import zscore
+import pandas as pd
 
 def correlated_ttest(r, rho, alpha=0.05):
     rhat = np.mean(r)
@@ -44,6 +46,7 @@ def mcnemar(y_true, yhatA, yhatB, alpha=0.05):
     nn[0,1] = sum(c1 & ~c2)
     nn[1,0] = sum(~c1 & c2)
     nn[1,1] = sum(~c1 & ~c2)
+    #nn= np.array([[sum(c1 & c2),sum(c1 & ~c2)],[sum(~c1 & c2),sum(~c1 & ~c2)]])
 
     n = sum(nn.flat);
     n12 = nn[0,1]
@@ -637,7 +640,7 @@ def gausKernelDensity(X,width):
       log_density    vector of estimated log_densities
     '''
     X = np.mat(np.asarray(X))
-    N,M = X.shaperr
+    N,M = X.shape
 
     # Calculate squared euclidean distance between data points
     # given by ||x_i-x_j||_F^2=||x_i||_F^2-2x_i^Tx_j+||x_i||_F^2 efficiently
@@ -1173,3 +1176,192 @@ def windows_graphviz_call(fname, cur_dir, path_to_graphviz):
                 ' -Gdpi=600'
     call(call_str)
     
+
+
+
+
+def similarity(X, Y, method):
+    '''
+    SIMILARITY Computes similarity matrices
+
+    Usage:
+        sim = similarity(X, Y, method)
+
+    Input:
+    X   N1 x M matrix
+    Y   N2 x M matrix 
+    method   string defining one of the following similarity measure
+           'SMC', 'smc'             : Simple Matching Coefficient
+           'Jaccard', 'jac'         : Jaccard coefficient 
+           'ExtendedJaccard', 'ext' : The Extended Jaccard coefficient
+           'Cosine', 'cos'          : Cosine Similarity
+           'Correlation', 'cor'     : Correlation coefficient
+
+    Output:
+    sim Estimated similarity matrix between X and Y
+        If input is not binary, SMC and Jaccard will make each
+        attribute binary according to x>median(x)
+
+    Copyright, Morten Morup and Mikkel N. Schmidt
+    Technical University of Denmark '''
+
+    X = np.mat(X)
+    Y = np.mat(Y)
+    N1, M = np.shape(X)
+    N2, M = np.shape(Y)
+    
+    method = method[:3].lower()
+    if method=='smc': # SMC
+        X,Y = binarize(X,Y);
+        sim = ((X*Y.T)+((1-X)*(1-Y).T))/M
+    elif method=='jac': # Jaccard
+        X,Y = binarize(X,Y);
+        sim = (X*Y.T)/(M-(1-X)*(1-Y).T)        
+    elif method=='ext': # Extended Jaccard
+        XYt = X*Y.T
+        sim = XYt / (np.log( np.exp(sum(np.power(X.T,2))).T * np.exp(sum(np.power(Y.T,2))) ) - XYt)
+    elif method=='cos': # Cosine
+        sim = (X*Y.T)/(np.sqrt(sum(np.power(X.T,2))).T * np.sqrt(sum(np.power(Y.T,2))))
+    elif method=='cor': # Correlation
+        X_ = zscore(X,axis=1,ddof=1)
+        Y_ = zscore(Y,axis=1,ddof=1)
+        sim = (X_*Y_.T)/(M-1)
+    return sim
+        
+def binarize(X,Y=None):
+    ''' Force binary representation of the matrix, according to X>median(X) '''
+    x_was_transposed = False
+    if Y is None:
+        if X.shape[0] == 1:
+            x_was_transposed = True
+            X = X.T;
+        
+        Xmedians = np.ones((np.shape(X)[0],1)) * np.median(X,0)
+        Xflags = X>Xmedians
+        X[Xflags] = 1; X[~Xflags] = 0
+
+        if x_was_transposed:
+            return X.T
+        return X
+    else:
+        #X = np.matrix(X); Y = np.matrix(Y);
+        #XYmedian= np.median(np.bmat('X; Y'),0)
+        #Xmedians = np.ones((np.shape(X)[0],1)) * XYmedian
+        #Xflags = X>Xmedians
+        #X[Xflags] = 1; X[~Xflags] = 0
+        #Ymedians = np.ones((np.shape(Y)[0],1)) * XYmedian
+        #Yflags = Y>Ymedians
+        #Y[Yflags] = 1; Y[~Yflags] = 0
+        return [binarize(X,None),binarize(Y,None)]
+        
+
+## Example
+#import numpy as np
+#from similarity import binarize2
+#A = np.asarray([[1,2,3,4,5],[6,7,8,9,10],[1,2,3,4,5],[6,7,8,9,10]]).T
+#binarize2(A,['a','b','c','d'])
+def binarize2(X,columnnames):
+    X = np.concatenate((binarize(X),1-binarize(X)),axis=1)
+
+    new_column_names = []
+    [new_column_names.append(elm) for elm in [name+' 50th-100th percentile' for name in columnnames]]
+    [new_column_names.append(elm) for elm in [name+' 0th-50th percentile' for name in columnnames]]
+
+    return X, new_column_names
+
+
+
+# APRIORI
+def mat2transactions(X, labels=[]):
+    T = []
+    for i in range(X.shape[0]):
+        l = np.nonzero(X[i, :])[0].tolist()
+        if labels:
+            l = [labels[i] for i in l]
+        T.append(l)
+    return T
+
+def print_apriori_rules(rules, prints = True, sup_dig = 4, conf_dig = 4):
+    frules = []
+    rules_conf_sup =pd.DataFrame()
+    i=0
+    for r in rules:
+        for o in r.ordered_statistics:        
+            conf = round(o.confidence, conf_dig)
+            supp = round(r.support, sup_dig)
+            x = ", ".join( list( o.items_base ) )
+            y = ", ".join( list( o.items_add ) )
+            if prints:
+                print("{%s} -> {%s}  (supp: %.3f, conf: %.3f)"%(x,y, supp,
+                 conf))
+            frules.append( (x,y) )
+            rules_conf_sup[i]= np.array([x,y, supp, conf])
+            i += 1
+    rules_conf_sup = np.transpose(rules_conf_sup)
+    rules_conf_sup.columns = ["X itemsets", "Y itemsets", "support", "confidence"]
+
+    return frules, rules_conf_sup
+
+# CLUSTERING
+
+def clusterplot(X, clusterid, centroids='None', y='None', covars='None'):
+    '''
+    CLUSTERPLOT Plots a clustering of a data set as well as the true class
+    labels. If data is more than 2-dimensional it should be first projected
+    onto the first two principal components. Data objects are plotted as a dot
+    with a circle around. The color of the dot indicates the true class,
+    and the cicle indicates the cluster index. Optionally, the centroids are
+    plotted as filled-star markers, and ellipsoids corresponding to covariance
+    matrices (e.g. for gaussian mixture models).
+
+    Usage:
+    clusterplot(X, clusterid)
+    clusterplot(X, clusterid, centroids=c_matrix, y=y_matrix)
+    clusterplot(X, clusterid, centroids=c_matrix, y=y_matrix, covars=c_tensor)
+    
+    Input:
+    X           N-by-M data matrix (N data objects with M attributes)
+    clusterid   N-by-1 vector of cluster indices
+    centroids   K-by-M matrix of cluster centroids (optional)
+    y           N-by-1 vector of true class labels (optional)
+    covars      M-by-M-by-K tensor of covariance matrices (optional)
+    '''
+    
+    X = np.asarray(X)
+    cls = np.asarray(clusterid)
+    if type(y) is str and y=='None':
+        y = np.zeros((X.shape[0],1))
+    else:
+        y = np.asarray(y)
+    if type(centroids) is not str:
+        centroids = np.asarray(centroids)
+    K = np.size(np.unique(cls))
+    C = np.size(np.unique(y))
+    ncolors = np.max([C,K])
+    
+    # plot data points color-coded by class, cluster markers and centroids
+    #hold(True)
+    colors = [0]*ncolors
+    for color in range(ncolors):
+        colors[color] = plt.cm.jet(color/(ncolors-1))[:3]
+    for i,cs in enumerate(np.unique(y)):
+        plt.plot(X[(y==cs).ravel(),0], X[(y==cs).ravel(),1], 'o', markeredgecolor='k', markerfacecolor=colors[i],markersize=6, zorder=2)
+    for i,cr in enumerate(np.unique(cls)):
+        plt.plot(X[(cls==cr).ravel(),0], X[(cls==cr).ravel(),1], 'o', markersize=12, markeredgecolor=colors[i], markerfacecolor='None', markeredgewidth=3, zorder=1)
+    if type(centroids) is not str:        
+        for cd in range(centroids.shape[0]):
+            plt.plot(centroids[cd,0], centroids[cd,1], '*', markersize=22, markeredgecolor='k', markerfacecolor=colors[cd], markeredgewidth=2, zorder=3)
+    # plot cluster shapes:
+    if type(covars) is not str:
+        for cd in range(centroids.shape[0]):
+            x1, x2 = gauss_2d(centroids[cd],covars[cd,:,:])
+            plt.plot(x1,x2,'-', color=colors[cd], linewidth=3, zorder=5)
+    #hold(False)
+
+    # create legend        
+    legend_items = np.unique(y).tolist()+np.unique(cls).tolist()+np.unique(cls).tolist()
+    for i in range(len(legend_items)):
+        if i<C: legend_items[i] = 'Class: {0}'.format(legend_items[i]);
+        elif i<C+K: legend_items[i] = 'Cluster: {0}'.format(legend_items[i]);
+        else: legend_items[i] = 'Centroid: {0}'.format(legend_items[i]);
+    plt.legend(legend_items, numpoints=1, markerscale=.75, prop={'size': 9})
